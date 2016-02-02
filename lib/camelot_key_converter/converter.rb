@@ -7,25 +7,27 @@ require 'hashie'
 
 class CamelotKeyConverter::Converter
   MAP_FILE = File.expand_path('~/.key_convert_map.yml')
+
+  class ExitError < StandardError
+  end
+
   attr_accessor :ignored, :map, :should_convert_all
 
   def initialize
     self.ignored = []
     self.map = {}
     self.should_convert_all = false
-    try_load_file
+    try_load_mapping_file
   end
 
+  # convert current directory
+  # TODO: allow passing in files/folders
   def run!
     convert(Pathname.new('.'))
   rescue ExitError => e
     cli.say('exiting ...')
   ensure
     save_config!
-  end
-
-  def cli
-    @cli ||= HighLine.new
   end
 
   def save_config!
@@ -37,6 +39,7 @@ class CamelotKeyConverter::Converter
     end
   end
 
+  # recursively traverse path and ask user to convert folders/files
   def convert(path)
     if path.file?
       convert_file! path
@@ -67,14 +70,8 @@ class CamelotKeyConverter::Converter
     end
   end
 
-  def try_load_file
-    x = YAML::load_file(MAP_FILE)
-    self.ignored = x['ignored'] || []
-    self.map = x['map'] || {}
-  rescue
-  end
 
-
+  # handle converting key in one file
   def convert_file!(path)
     TagLib::MPEG::File.open(path.to_s) do |file|
       tag = file.id3v2_tag
@@ -138,8 +135,18 @@ class CamelotKeyConverter::Converter
       key.field_list = [new_key]
       file.save
     end
-  end
 
-  class ExitError < StandardError
+    private
+    # tries to load mappings from MAP_FILE
+    def try_load_mapping_file
+      x = YAML::load_file(MAP_FILE)
+      self.ignored = x['ignored'] || []
+      self.map = x['map'] || {}
+    rescue
+    end
+
+    def cli
+      @cli ||= HighLine.new
+    end
   end
 end

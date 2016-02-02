@@ -1,5 +1,7 @@
 # Camelot Key Converter
 
+**WARNING**: This project is nowhere near production ready and will probably never be, unless *you* continue the development ;)
+
 ## Installation
 
     $ gem install camelot_key_converter
